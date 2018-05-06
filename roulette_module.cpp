@@ -2,6 +2,7 @@
 #include <vector>
 #include <ctime>
 #include <cstdlib>
+#include <cstdio>
 #include <sstream>
 #include <cstring>
 
@@ -54,6 +55,8 @@ public:
         _min = rhs._min;
         _max = rhs._max;
         _val = rhs._val;
+		
+		return *this;
     }
 
     virtual ~RangedValue(){}
@@ -97,7 +100,7 @@ public:
 template <typename T, typename ROLLER = SimpleRand>
 class Roulette{
 private:
-    std::vector<RangedValue<T>> _range_list;
+    std::vector<RangedValue<T> > _range_list;
     double _last_val;
     ROLLER _rand_gen;
 public:
@@ -113,7 +116,7 @@ public:
     virtual ~Roulette()
     {}
 
-    typedef typename std::vector<RangedValue<T>>::iterator iterator;
+    typedef typename std::vector<RangedValue<T> >::iterator iterator;
 
     virtual iterator begin(){ return _range_list.begin(); }
     virtual iterator end(){ return _range_list.end(); }
@@ -165,7 +168,7 @@ public:
 extern "C"{
 
 
-    void* roulette_init(){
+    void* roulette_init(void){
         return new Roulette<void*>();
     }
 

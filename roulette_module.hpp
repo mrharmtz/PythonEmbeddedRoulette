@@ -4,7 +4,7 @@ extern "C" {
     #define ERR_MSG_SIZE 1000
     static char roulette_err_msg[ERR_MSG_SIZE+1];
 
-    void* roulette_init();
+    void* roulette_init(void);
     void roulette_free(void* roulette);
     void roulette_insert(void* roulette,void* obj,double chance);
     void* roulette_roll(void* roulette);
