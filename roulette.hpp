@@ -10,6 +10,8 @@
 #include <cstring>
 #include <initializer_list>
 #include <utility>
+#include <random>
+#include <chrono>
 
 
 class SimpleRand{
@@ -30,6 +32,29 @@ class SimpleRand{
 
             return (max - min)*(rand()/((double)RAND_MAX+1)) + min;
 
+        }
+};
+
+class NewRand{
+
+    private:
+    mutable std::default_random_engine _rando_seeder;  //Will be used to obtain a seed for the random number engine
+    ///std::mt19937 _generator; //Standard mersenne_twister_engine seeded with rd()
+    mutable std::uniform_real_distribution<> _distribution;
+
+    public:
+
+        NewRand()
+        :_rando_seeder(std::chrono::system_clock::now().time_since_epoch().count())
+        ,_distribution(0.0,1.0)
+        { }
+
+        double operator()(double min,double max)const {
+
+            if(min >= max)
+                throw std::invalid_argument("min cannot be greater or equal to max");
+
+            return (max - min)* _distribution(_rando_seeder) + min;
         }
 };
 
