@@ -2,10 +2,23 @@
 #include <Python.h>
 //#include "roulette.hpp"
 
+#define RLT_DEBUG
+
+#ifdef RLT_DEBUG
+
+#define RLT_FORMAT_LINE(FORMAT,...) PySys_WriteStdout("%05d:" FORMAT "\n", __LINE__, __VA_ARGS__)
+#define RLT_PRINT_LINE(FORMAT)      PySys_WriteStdout("%05d:" FORMAT "\n", __LINE__)
+
+#else
+
+#define RLT_FORMAT_LINE(FORMAT,...)
+#define RLT_PRINT_LINE(FORMAT)     
+
+#endif
 
 static PyObject* rlt_random_range(PyObject *self, PyObject *args){
 
-
+    RLT_PRINT_LINE("random range");
     Py_RETURN_NONE;
 }
 
