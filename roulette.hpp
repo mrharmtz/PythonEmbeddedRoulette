@@ -219,6 +219,8 @@ public:
             new_offset = iter->get_max();
         }
 
+        _last_val = new_offset;
+
         _range_list.erase(to_remove_iter);
 
         return true;

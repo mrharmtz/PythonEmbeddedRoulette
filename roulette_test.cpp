@@ -9,17 +9,15 @@ using std::endl;
 
 typedef std::string test_val_t;
 
-int main(int argc, char* argv[]){
+std::map<test_val_t, size_t> run_roulette(Roulette<test_val_t, NewRand> roulette, int attempts, bool print_run = false){
 
-    const char* removable = "little bitch";
-
-    Roulette<test_val_t, NewRand> roulette({{"suck this dick", 5}, {removable, 2}, {"smell you later", 2}, {"sir farts a lot", 1}});
     const Roulette<test_val_t, NewRand> const_roulette(roulette);
 
     std::map<test_val_t, size_t> counter;
     std::map<test_val_t, size_t>::iterator find_iter;
 
-    for (int i = 0 ; i < ATTEMPTS ; ++i){
+
+    for (int i = 0 ; i < attempts ; ++i){
         
         test_val_t new_val = const_roulette.roll();
 
@@ -28,10 +26,22 @@ int main(int argc, char* argv[]){
         }else{
             ++(find_iter->second);
         }
-
-        cout << new_val << endl;
+        
+        if (print_run)
+            cout << new_val << endl;
     }
 
+    return counter;
+}
+
+int main(int argc, char* argv[]){
+
+    const char* removable = "little bitch";
+
+    Roulette<test_val_t, NewRand> roulette({{"suck this dick", 5}, {"sir farts a lot", 2}, {"smell you later", 2}, {removable, 1}});
+    
+    auto counter = run_roulette(roulette, ATTEMPTS);
+    
     for( auto const& val : counter){
         cout << "value \"" << val.first << "\" was found " << val.second << " times" << endl;
     }
@@ -48,6 +58,11 @@ int main(int argc, char* argv[]){
     for (auto iter = roulette.begin() ; iter != roulette.end() ; ++iter)
         cout << "value \"" << iter->get_value() << "\" is between " << iter->get_min() << " and " << iter->get_max() << endl;
 
+    counter = run_roulette(roulette, ATTEMPTS);
+    
+    for( auto const& val : counter){
+        cout << "value \"" << val.first << "\" was found " << val.second << " times" << endl;
+    }
 
     return 0;
 }
