@@ -2,7 +2,7 @@
 #include <iostream>
 #include <map>
 
-#define ATTEMPTS 7000
+#define ATTEMPTS 10000
 
 using std::cout;
 using std::endl;
@@ -11,7 +11,9 @@ typedef std::string test_val_t;
 
 int main(int argc, char* argv[]){
 
-    Roulette<test_val_t, NewRand> roulette({{"little bitch", 5}, {"suck this dick", 2}});
+    const char* removable = "little bitch";
+
+    Roulette<test_val_t, NewRand> roulette({{"suck this dick", 5}, {removable, 2}, {"smell you later", 2}, {"sir farts a lot", 1}});
     const Roulette<test_val_t, NewRand> const_roulette(roulette);
 
     std::map<test_val_t, size_t> counter;
@@ -28,12 +30,24 @@ int main(int argc, char* argv[]){
         }
 
         cout << new_val << endl;
-
     }
 
     for( auto const& val : counter){
         cout << "value \"" << val.first << "\" was found " << val.second << " times" << endl;
     }
+
+    cout << endl;
+
+    for (auto iter = roulette.begin() ; iter != roulette.end() ; ++iter)
+        cout << "value \"" << iter->get_value() << "\" is between " << iter->get_min() << " and " << iter->get_max() << endl;
+
+    cout << endl << "removing value \"" << removable << "\"" << endl << endl;
+
+    roulette.remove(removable);
+
+    for (auto iter = roulette.begin() ; iter != roulette.end() ; ++iter)
+        cout << "value \"" << iter->get_value() << "\" is between " << iter->get_min() << " and " << iter->get_max() << endl;
+
 
     return 0;
 }

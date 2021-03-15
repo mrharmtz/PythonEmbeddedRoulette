@@ -88,7 +88,12 @@ public:
 		return *this;
     }
 
-    virtual ~RangedValue(){}
+    virtual ~RangedValue() { }
+
+    void update_offset(const double& new_offset){
+        _max = new_offset + (_max - _min);
+        _min = new_offset;
+    }
 
     bool operator<(const double& val)const {
 
@@ -197,10 +202,31 @@ public:
         _range_list.push_back(RangedValue<T>(shadow, (_last_val+=chance), val));
     }
 
+    virtual bool remove(T const & value){
+
+        auto iter = _range_list.begin();
+
+        while (iter->get_value() != value && iter++ != _range_list.end());
+
+        if (iter == _range_list.end())
+            return false;
+
+        auto to_remove_iter = iter;
+        double new_offset = iter->get_min();
+
+        for(++iter; iter != _range_list.end() ; ++iter){
+            iter->update_offset(new_offset);
+            new_offset = iter->get_max();
+        }
+
+        _range_list.erase(to_remove_iter);
+
+        return true;
+    }
+
     virtual size_t size()const{
         return _range_list.size();
     }
-
 
     virtual T const & roll() const{
         return _range_list[_find_index(_rand_gen(0,_last_val))].get_value();
