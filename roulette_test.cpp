@@ -58,6 +58,7 @@ int main(int argc, char* argv[]){
     for (auto iter = roulette.begin() ; iter != roulette.end() ; ++iter)
         cout << "value \"" << iter->get_value() << "\" is between " << iter->get_min() << " and " << iter->get_max() << endl;
 
+    cout << endl;
     counter = run_roulette(roulette, ATTEMPTS);
     
     for( auto const& val : counter){

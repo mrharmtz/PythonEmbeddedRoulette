@@ -138,9 +138,9 @@ public:
 template <typename T, typename ROLLER = SimpleRand>
 class Roulette{
 private:
+    ROLLER _rand_gen;
     std::vector<RangedValue<T> > _range_list;
     double _last_val;
-    ROLLER _rand_gen;
 
 protected:
     virtual size_t _find_index(double roll)const {
@@ -171,12 +171,14 @@ protected:
 
 public:
 
-    Roulette()
-    :_last_val(0)
+    Roulette(ROLLER rand_gen = ROLLER())
+    :_rand_gen(rand_gen)
+    ,_last_val(0)
     {}
     
-    Roulette(const std::initializer_list<std::pair<T, double> >& list)
-    :_last_val(0)
+    Roulette(const std::initializer_list<std::pair<T, double> >& list, ROLLER rand_gen = ROLLER())
+    :_rand_gen(rand_gen)
+    ,_last_val(0)
     {
         for(const auto& val : list){
             double shadow = _last_val;
@@ -185,7 +187,8 @@ public:
     }
 
     Roulette(const Roulette& other)
-    :_range_list(other._range_list)
+    :_rand_gen(other._rand_gen)
+    ,_range_list(other._range_list)
     ,_last_val(other._last_val)
     {}
 
