@@ -201,6 +201,10 @@ public:
     virtual iterator end(){ return _range_list.end(); }
 
     virtual void insert(T val, double chance){
+
+        if (chance <= 0)
+            std::logic_error("chance cannot be equal or less than 0");
+
         double shadow = _last_val;
         _range_list.push_back(RangedValue<T>(shadow, (_last_val+=chance), val));
     }

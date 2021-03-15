@@ -28,6 +28,55 @@ typedef struct
 
 static PyTypeObject RouletteType = { PyVarObject_HEAD_INIT(NULL, 0) };
 
+static void rlt_roulette_dealloc(PyRoulette *self)
+{
+    for (auto iter = self->roulette_handler.begin() ; iter != self->roulette_handler.end() ; ++iter){
+        Py_XDECREF(iter->get_value());
+    }
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static PyObject * rlt_roulette_insert(PyRoulette *self, PyObject *args)
+{
+    PyObject* object;
+    double chance;
+
+    if(!PyArg_ParseTuple(args, "Od", &object, &chance)) {
+        return NULL;
+    }
+
+    Py_INCREF(object);
+    self->roulette_handler.insert(object, chance);
+
+    RLT_PRINT_LINE("");
+    for (auto iter = self->roulette_handler.begin() ; iter != self->roulette_handler.end() ; ++iter){
+        RLT_FORMAT_LINE("routlette object at %p with a chance of %lf", iter->get_value(), iter->get_max() - iter->get_min());
+    }
+
+    Py_RETURN_NONE;
+}
+
+static PyObject * rlt_roulette_roll(PyRoulette *self, PyObject *Py_UNUSED(ignored))
+{   
+    PyObject* ret_val;
+    RLT_FORMAT_LINE("function %s ", __func__);
+    try{
+         ret_val = self->roulette_handler.roll();
+    }catch(...){
+        RLT_PRINT_LINE("an exception was thrown");
+        return NULL;
+    }
+    RLT_FORMAT_LINE("routlette rolled object at %p ", ret_val);
+    Py_INCREF(ret_val);
+    return ret_val;
+}
+
+
+static PyMethodDef rlt_roulette_methods[] = {
+    {"insert", (PyCFunction) rlt_roulette_insert, METH_VARARGS, "inserts a python element into the roulette"},
+    {"roll", (PyCFunction) rlt_roulette_roll, METH_NOARGS, "randomly choses an element and returns it"},
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+};
 
 PyTypeObject* rlt_init_roulette_type(bool init){
     
@@ -38,6 +87,8 @@ PyTypeObject* rlt_init_roulette_type(bool init){
         RouletteType.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE;
         RouletteType.tp_doc = "roulette object";
         RouletteType.tp_new = PyType_GenericNew;
+        RouletteType.tp_dealloc = (destructor) rlt_roulette_dealloc,
+        RouletteType.tp_methods = rlt_roulette_methods;
     }
 
     return &RouletteType;
@@ -69,7 +120,7 @@ static PyObject* rlt_random_range(PyObject *self, PyObject *args){
 static PyMethodDef roulette_methods[] = {
 
     {"random_range", (PyCFunction)rlt_random_range, METH_VARARGS, "returns value in passed range"},
-    {NULL,NULL,0,NULL} 
+    {NULL,NULL,0,NULL} /* Sentinel */
 
 };
 
