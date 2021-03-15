@@ -76,6 +76,10 @@ public:
         }
     }
 
+    RangedValue(RangedValue& other)
+    :_min(other._min),_max(other._max),_val(other._val){
+    }
+
     RangedValue(const RangedValue& other)
     :_min(other._min),_max(other._max),_val(other._val){
     }

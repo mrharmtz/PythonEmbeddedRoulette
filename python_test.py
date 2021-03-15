@@ -10,5 +10,7 @@ print(type(randomizer))
 for i in range(10):
     randomizer.insert(f'{i}', i+1)
 
+randomizer.remove('5')
+
 for i in range(10):
     print(f'{randomizer.roll()}')
