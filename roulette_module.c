@@ -18,8 +18,22 @@
 
 static PyObject* rlt_random_range(PyObject *self, PyObject *args){
 
-    RLT_PRINT_LINE("random range");
-    Py_RETURN_NONE;
+    double min, max;
+
+    if(!PyArg_ParseTuple(args, "dd", &min, &max)) {
+        return NULL;
+    }
+
+    if (min >= max)
+    {
+        PyErr_SetString(PyExc_ArithmeticError, "min cannot be greater than max");
+        return NULL;
+
+    }
+    
+
+    RLT_FORMAT_LINE("min = %lf, max = %lf", min, max);
+    return Py_BuildValue("d", 5.0);
 }
 
 
