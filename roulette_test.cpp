@@ -1,3 +1,4 @@
+#define ROULETTE_DEBUG_CPP
 #include "roulette.hpp"
 #include <iostream>
 #include <map>
@@ -11,7 +12,8 @@ typedef std::string test_val_t;
 
 std::map<test_val_t, size_t> run_roulette(Roulette<test_val_t, NewRand> roulette, int attempts, bool print_run = false){
 
-    const Roulette<test_val_t, NewRand> const_roulette(roulette);
+    //const Roulette<test_val_t, NewRand> const_roulette(roulette);
+    Roulette<test_val_t, NewRand> const_roulette(roulette);
 
     std::map<test_val_t, size_t> counter;
     std::map<test_val_t, size_t>::iterator find_iter;

@@ -13,8 +13,23 @@
 #include <random>
 #include <chrono>
 
+#ifdef ROULETTE_DEBUG_PYTHON
 #include <Python.h>
+#define DBG_FORMAT_LINE(FORMAT,...) PySys_WriteStdout("%05d:" FORMAT "\n", __LINE__, __VA_ARGS__)
+#define DBG_PRINT_LINE(FORMAT)      PySys_WriteStdout("%05d:" FORMAT "\n", __LINE__)
 
+#elif defined(ROULETTE_DEBUG_CPP)
+#include <cstdio>
+
+#define DBG_FORMAT_LINE(FORMAT,...) printf("%05d:" FORMAT "\n", __LINE__, __VA_ARGS__)
+#define DBG_PRINT_LINE(FORMAT)      printf("%05d:" FORMAT "\n", __LINE__)
+
+#else
+
+#define DBG_FORMAT_LINE(FORMAT,...) 
+#define DBG_PRINT_LINE(FORMAT)      
+
+#endif
 
 class SimpleRand{
     private:
@@ -28,8 +43,6 @@ class SimpleRand{
         }
 
         double operator()(double min,double max)const{
-            
-            PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
 
             if(min >= max)
                 throw std::invalid_argument("min cannot be greater or equal to max");
@@ -54,8 +67,6 @@ class NewRand{
         { }
 
         double operator()(double min,double max)const {
-            
-            PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
 
             if(min >= max)
                 throw std::invalid_argument("min cannot be greater or equal to max");
@@ -147,19 +158,17 @@ public:
 
 template <typename T, typename ROLLER = NewRand>
 class Roulette{
+public:
+    typedef typename std::vector<RangedValue<T> >::iterator iterator;
 private:
     ROLLER _rand_gen;
     std::vector<RangedValue<T> > _range_list;
     double _last_val;
 
 protected:
-    virtual size_t _find_index(double roll)const {
-
-        PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
+    virtual size_t find_index(double roll)const {
 
         size_t start = 0, fin = _range_list.size()-1,mid;
-
-        PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
 
         while(start <= fin){
             mid = (start+fin)/2;
@@ -178,11 +187,11 @@ protected:
                 return mid;
             }
 
-            PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
+            DBG_FORMAT_LINE("%s", __func__);
             throw std::logic_error("reached the end of the loop, not possible");
         }
 
-        PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
+        DBG_FORMAT_LINE("%s", __func__);
         throw std::logic_error("reached the end of the loop, and not found a value");
     }
 
@@ -211,8 +220,6 @@ public:
 
     virtual ~Roulette()
     {}
-
-    typedef typename std::vector<RangedValue<T> >::iterator iterator;
 
     virtual iterator begin(){ return _range_list.begin(); }
     virtual iterator end(){ return _range_list.end(); }
@@ -255,22 +262,11 @@ public:
     }
 
     virtual T const & roll() const{
-        return _range_list[_find_index(_rand_gen(0,_last_val))].get_value();
+        return _range_list[find_index(_rand_gen(0,_last_val))].get_value();
     }
 
     virtual T& roll(){
-        
-        PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
-
-        double rnd_val = _rand_gen(0,_last_val);
-
-        PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
-
-        size_t index = _find_index(rnd_val);
-
-        PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
-
-        return _range_list[index].get_value();
+        return _range_list[find_index(_rand_gen(0,_last_val))].get_value();
     }
 
     virtual bool isEmpty()const{

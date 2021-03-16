@@ -77,7 +77,7 @@ typedef struct
 {
     PyObject_HEAD
 
-    Roulette<PythonSmartPointer> roulette_handler;
+    Roulette<PythonSmartPointer>* roulette_handler;
 
 }PyRoulette;
 
@@ -85,8 +85,24 @@ static PyTypeObject RouletteType = { PyVarObject_HEAD_INIT(NULL, 0) };
 
 static void rlt_roulette_dealloc(PyRoulette *self)
 {
+    delete self->roulette_handler;
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
+
+static PyObject* rlt_roulette_new(PyTypeObject *type, PyObject *args, PyObject *kwds){
+
+    PyRoulette *self;
+    if(!(self = (PyRoulette *) type->tp_alloc(type, 0)))
+        return NULL;
+    
+    self->roulette_handler = new Roulette<PythonSmartPointer>();
+
+    return (PyObject *)self;
+}
+
+/*static int rlt_roulette_init(PyRoulette *self, PyObject *args, PyObject *kwds){
+
+}*/
 
 static PyObject * rlt_roulette_insert(PyRoulette *self, PyObject *args)
 {
@@ -99,12 +115,7 @@ static PyObject * rlt_roulette_insert(PyRoulette *self, PyObject *args)
 
     //Py_INCREF(object);
     PythonSmartPointer ptr(object);
-    self->roulette_handler.insert(ptr, chance);
-
-    RLT_PRINT_LINE("");
-    for (auto iter = self->roulette_handler.begin() ; iter != self->roulette_handler.end() ; ++iter){
-        RLT_FORMAT_LINE("routlette object at %p with a chance of %lf", (PyObject*)iter->get_value(), iter->get_max() - iter->get_min());
-    }
+    self->roulette_handler->insert(ptr, chance);
 
     Py_RETURN_NONE;
 }
@@ -112,15 +123,13 @@ static PyObject * rlt_roulette_insert(PyRoulette *self, PyObject *args)
 static PyObject * rlt_roulette_roll(PyRoulette *self, PyObject *Py_UNUSED(ignored))
 {   
     PythonSmartPointer ret_val;
-    RLT_FORMAT_LINE("function %s ", __func__);
     try{
-         ret_val = self->roulette_handler.roll();
+         ret_val = self->roulette_handler->roll();
     }catch(...){
         RLT_PRINT_LINE("an exception was thrown");
         return NULL;
     }
-    RLT_FORMAT_LINE("routlette rolled object at %p ", (PyObject*)ret_val);
-    //Py_INCREF(ret_val);
+    Py_INCREF(ret_val);
     return (PyObject*)ret_val;
 }
 
@@ -128,26 +137,15 @@ static PyObject * rlt_roulette_remove(PyRoulette *self, PyObject *args)
 {
     PyObject* object;
 
-    RLT_FORMAT_LINE("function %s ", __func__);
-
     if(!PyArg_ParseTuple(args, "O", &object)) {
         return NULL;
     }
-
-    RLT_FORMAT_LINE("function %s ", __func__);
-
-    //Py_INCREF(object);
     PythonSmartPointer ptr(object);
-    RLT_FORMAT_LINE("function %s ", __func__);
-    self->roulette_handler.remove(ptr);
-    RLT_FORMAT_LINE("function %s ", __func__);
+    
+    if(self->roulette_handler->remove(ptr))
+        Py_RETURN_TRUE;
 
-    RLT_PRINT_LINE("");
-    for (auto iter = self->roulette_handler.begin() ; iter != self->roulette_handler.end() ; ++iter){
-        RLT_FORMAT_LINE("routlette object at %p with a chance of %lf", (PyObject*)iter->get_value(), iter->get_max() - iter->get_min());
-    }
-
-    Py_RETURN_NONE;
+    Py_RETURN_FALSE;
 }
 
 
@@ -166,7 +164,7 @@ PyTypeObject* rlt_init_roulette_type(bool init){
         RouletteType.tp_itemsize = 0;
         RouletteType.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE;
         RouletteType.tp_doc = "roulette object";
-        RouletteType.tp_new = PyType_GenericNew;
+        RouletteType.tp_new = rlt_roulette_new;
         RouletteType.tp_dealloc = (destructor) rlt_roulette_dealloc,
         RouletteType.tp_methods = rlt_roulette_methods;
     }
