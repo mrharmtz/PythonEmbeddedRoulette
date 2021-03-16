@@ -9,8 +9,8 @@
 
 #ifdef RLT_DEBUG
 
-#define RLT_FORMAT_LINE(FORMAT,...) PySys_WriteStdout("%05d:" FORMAT "\n", __LINE__, __VA_ARGS__)
-#define RLT_PRINT_LINE(FORMAT)      PySys_WriteStdout("%05d:" FORMAT "\n", __LINE__)
+#define RLT_FORMAT_LINE(FORMAT,...) PySys_WriteStdout("%05d:%s:" FORMAT "\n", __LINE__, __func__, __VA_ARGS__)
+#define RLT_PRINT_LINE(FORMAT)      PySys_WriteStdout("%05d:%s:" FORMAT "\n", __LINE__, __func__)
 
 #else
 
@@ -18,6 +18,8 @@
 #define RLT_PRINT_LINE(FORMAT)     
 
 #endif
+
+/********************************************************** python smart pointer **********************************************************/
 
 class PythonSmartPointer{
 private:
@@ -89,8 +91,11 @@ public:
 
 };
 
-/********************************************************** roulette type **********************************************************/
+/********************************************************** python smart pointer **********************************************************/
 
+/********************************************************** type decleration **********************************************************/
+
+//--------------------------- PyRoulette ---------------------------//
 typedef struct 
 {
     PyObject_HEAD
@@ -101,11 +106,33 @@ typedef struct
 
 static PyTypeObject RouletteType = { PyVarObject_HEAD_INIT(NULL, 0) };
 
+//--------------------------- PyRoulette ---------------------------//
+
+//--------------------------- PyRouletteIterator ---------------------------//
+
+typedef struct 
+{
+    PyObject_HEAD
+
+    Roulette<PythonSmartPointer>::iterator* begin_iterator;
+    Roulette<PythonSmartPointer>::iterator* end_iterator;
+
+}PyRouletteIterator;
+
+static PyTypeObject RouletteIteratorType = { PyVarObject_HEAD_INIT(NULL, 0) };
+
+//--------------------------- PyRouletteIterator ---------------------------//
+
+/********************************************************** type decleration **********************************************************/
+
+/********************************************************** roulette type **********************************************************/
+
 static void rlt_roulette_dealloc(PyRoulette *self)
 {
     delete self->roulette_handler;
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
+
 
 static PyObject* rlt_roulette_new(PyTypeObject *type, PyObject *args, PyObject *kwds){
 
@@ -204,6 +231,12 @@ static PyObject * rlt_roulette_remove(PyRoulette *self, PyObject *args)
     Py_RETURN_FALSE;
 }
 
+PyObject* rlt_roulette_iterator(PyRoulette* self){
+
+    
+
+    return NULL;
+}
 
 static PyMethodDef rlt_roulette_methods[] = {
     {"insert", (PyCFunction) rlt_roulette_insert, METH_VARARGS, "inserts a python element into the roulette"},
@@ -222,7 +255,8 @@ PyTypeObject* rlt_init_roulette_type(bool init){
         RouletteType.tp_doc = "roulette object";
         RouletteType.tp_new = rlt_roulette_new;
         RouletteType.tp_init = (initproc)rlt_roulette_init;
-        RouletteType.tp_dealloc = (destructor) rlt_roulette_dealloc,
+        RouletteType.tp_dealloc = (destructor) rlt_roulette_dealloc;
+        RouletteType.tp_iter = (getiterfunc)rlt_roulette_iterator;
         RouletteType.tp_methods = rlt_roulette_methods;
     }
 
@@ -230,6 +264,70 @@ PyTypeObject* rlt_init_roulette_type(bool init){
 }
 
 /********************************************************** roulette type **********************************************************/
+
+/********************************************************** roulette iterator **********************************************************/
+
+static void rlt_roulette_iterator_dealloc(PyRouletteIterator *self){
+
+    delete self->begin_iterator;
+    delete self->end_iterator;
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static PyObject* rlt_roulette_iterator_new(PyTypeObject *type, PyObject *args, PyObject *kwds){
+
+    PyRouletteIterator *self;
+    if(!(self = (PyRouletteIterator *) type->tp_alloc(type, 0)))
+        return NULL;
+    
+    self->begin_iterator = new Roulette<PythonSmartPointer>::iterator;
+    self->end_iterator = new Roulette<PythonSmartPointer>::iterator;
+
+    return (PyObject *)self;
+}
+
+static int rlt_roulette_iterator_init(PyRouletteIterator *self, PyObject *args, PyObject *kwds){
+
+    static char *kwlist[] = {NULL};
+    PyObject* py_roulette = NULL;
+
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|", kwlist, &py_roulette))
+        return -1;
+
+    if(!PyObject_TypeCheck(py_roulette, &RouletteType)){
+        PyErr_Format(PyExc_TypeError, "expecting object of type roulette");
+        return -1;
+    }
+
+    *(self->begin_iterator) = ((PyRoulette*)py_roulette)->roulette_handler->begin();
+    *(self->end_iterator) = ((PyRoulette*)py_roulette)->roulette_handler->end();
+
+    return 0;
+}   
+
+static PyMethodDef rlt_roulette_iterator_methods[] = {
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+};
+
+PyTypeObject* rlt_init_roulette_iterator_type(bool init){
+    
+    if(init){
+        RouletteIteratorType.tp_name = "roulette.rlt_iter";
+        RouletteIteratorType.tp_basicsize = sizeof(PyRouletteIterator);
+        RouletteIteratorType.tp_itemsize = 0;
+        RouletteIteratorType.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE;
+        RouletteIteratorType.tp_doc = "roulette iterator object";
+        RouletteIteratorType.tp_new = rlt_roulette_iterator_new;
+        RouletteIteratorType.tp_init = (initproc)rlt_roulette_iterator_init;
+        RouletteIteratorType.tp_dealloc = (destructor) rlt_roulette_iterator_dealloc;
+        RouletteIteratorType.tp_methods = rlt_roulette_methods;
+    }
+
+    return &RouletteType;
+}
+
+/********************************************************** roulette iterator **********************************************************/
 
 /********************************************************** roulette module **********************************************************/
 

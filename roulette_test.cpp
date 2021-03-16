@@ -41,7 +41,22 @@ int main(int argc, char* argv[]){
     const char* removable = "little bitch";
     const char* non_existant = "n/a";
 
+    Roulette<test_val_t, NewRand>::iterator default_iter;
+    Roulette<test_val_t, NewRand>::iterator another_default_iter;
+
     Roulette<test_val_t, NewRand> roulette({{"suck this dick", 5}, {"sir farts a lot", 2}, {"smell you later", 2}, {removable, 1}});
+
+    if(default_iter == ++roulette.end()){
+        cout << "default is end" << endl;
+    }else{
+        cout << "default is NOT end" << endl;
+    }
+
+    if(default_iter == another_default_iter){
+        cout << "default is another" << endl;
+    }else{
+        cout << "default is NOT another" << endl;
+    }
     
     auto counter = run_roulette(roulette, ATTEMPTS);
     

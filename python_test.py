@@ -21,3 +21,6 @@ for i in range(10000):
 
 for key,value in counter.items():
     print(f'{key}:{value}')
+
+for value in randomizer:
+    print(value)
