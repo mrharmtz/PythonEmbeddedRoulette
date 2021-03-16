@@ -21,6 +21,8 @@ for i in range(10000):
     else:
         counter[value] += 1
 
+print(f'randomizer has {len(randomizer)} elements')
+
 for key,value in counter.items():
     print(f'{key}:{value}')
 

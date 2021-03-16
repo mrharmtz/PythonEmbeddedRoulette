@@ -268,7 +268,7 @@ public:
         return _range_list[find_index(_rand_gen(0,_last_val))].get_value();
     }
 
-    virtual bool isEmpty()const{
+    virtual bool is_empty()const{
         return _range_list.empty();
     }
 };

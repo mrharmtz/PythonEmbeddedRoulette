@@ -105,7 +105,9 @@ typedef struct
 }PyRoulette;
 
 static PyTypeObject RouletteType = { PyVarObject_HEAD_INIT(NULL, 0) };
+static PySequenceMethods RouletteTypeSequenceMethods;
 
+static Py_ssize_t rlt_roulette_len(PyRoulette *self);
 static void rlt_roulette_dealloc(PyRoulette *self);
 static PyObject* rlt_roulette_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
 static PyObject * rlt_roulette_insert(PyRoulette *self, PyObject *args);
@@ -215,6 +217,10 @@ static int rlt_roulette_init(PyRoulette *self, PyObject *args, PyObject *kwds){
     return 0;
 }   
 
+static Py_ssize_t rlt_roulette_len(PyRoulette *self){
+    return self->roulette_handler->size();
+}
+
 static PyObject * rlt_roulette_roll(PyRoulette *self, PyObject *Py_UNUSED(ignored))
 {   
     PythonSmartPointer ret_val;
@@ -289,6 +295,8 @@ static PyMethodDef rlt_roulette_methods[] = {
 PyTypeObject* rlt_init_roulette_type(bool init){
     
     if(init){
+        RouletteTypeSequenceMethods.sq_length = (lenfunc) rlt_roulette_len;
+
         RouletteType.tp_name = "roulette.roulette";
         RouletteType.tp_basicsize = sizeof(PyRoulette);
         RouletteType.tp_itemsize = 0;
@@ -299,6 +307,7 @@ PyTypeObject* rlt_init_roulette_type(bool init){
         RouletteType.tp_dealloc = (destructor) rlt_roulette_dealloc;
         RouletteType.tp_iter = (getiterfunc)rlt_roulette_iterator;
         RouletteType.tp_methods = rlt_roulette_methods;
+        RouletteType.tp_as_sequence = &RouletteTypeSequenceMethods;
     }
 
     return &RouletteType;
