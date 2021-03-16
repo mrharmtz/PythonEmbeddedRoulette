@@ -1,7 +1,9 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-#include "roulette.hpp"
 #include <utility>
+
+#define ROULETTE_DEBUG_PYTHON
+#include "roulette.hpp"
 
 #define RLT_DEBUG
 
@@ -36,7 +38,23 @@ public:
         Py_INCREF(_py_object);
     }
 
+    operator std::string()const{
+        PyObject* objects_representation = PyObject_Str(_py_object);
+
+        if(!objects_representation)
+            return "";
+
+        const char* s = PyUnicode_AsUTF8(objects_representation);
+
+        if(!s)
+            return "";
+
+        return s;
+
+    }
+
     PythonSmartPointer& operator=(const PythonSmartPointer& rhs){
+
         if(_py_object)
             Py_XDECREF(_py_object);
         _py_object = rhs._py_object;
@@ -46,7 +64,7 @@ public:
 
     bool operator==(const PythonSmartPointer& other)const{
         
-        if(_py_object)
+        if(!_py_object)
             return false;
 
         return PyObject_RichCompareBool(_py_object, other._py_object, Py_EQ);
@@ -54,7 +72,7 @@ public:
 
     bool operator!=(const PythonSmartPointer& other)const{
 
-        if(_py_object)
+        if(!_py_object)
             return true;
 
         return PyObject_RichCompareBool(_py_object, other._py_object, Py_NE);
@@ -113,7 +131,6 @@ static PyObject * rlt_roulette_insert(PyRoulette *self, PyObject *args)
         return NULL;
     }
 
-    //Py_INCREF(object);
     PythonSmartPointer ptr(object);
     self->roulette_handler->insert(ptr, chance);
 
@@ -140,10 +157,17 @@ static PyObject * rlt_roulette_remove(PyRoulette *self, PyObject *args)
     if(!PyArg_ParseTuple(args, "O", &object)) {
         return NULL;
     }
+
+    RLT_FORMAT_LINE("%s", __func__);
+
     PythonSmartPointer ptr(object);
+
+    RLT_FORMAT_LINE("%s", __func__);
     
     if(self->roulette_handler->remove(ptr))
         Py_RETURN_TRUE;
+
+    RLT_FORMAT_LINE("%s", __func__);
 
     Py_RETURN_FALSE;
 }

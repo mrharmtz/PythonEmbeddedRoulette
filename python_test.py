@@ -8,7 +8,7 @@ randomizer = roulette.roulette()
 for i in range(10):
     randomizer.insert(f'{i}', i+1)
 
-# randomizer.remove('5')
+randomizer.remove('5')
 
 counter = {}
 
