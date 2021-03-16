@@ -40,21 +40,6 @@ public:
         Py_INCREF(_py_object);
     }
 
-    operator std::string()const{
-        PyObject* objects_representation = PyObject_Str(_py_object);
-
-        if(!objects_representation)
-            return "";
-
-        const char* s = PyUnicode_AsUTF8(objects_representation);
-
-        if(!s)
-            return "";
-
-        return s;
-
-    }
-
     PythonSmartPointer& operator=(const PythonSmartPointer& rhs){
 
         if(_py_object)
@@ -84,6 +69,21 @@ public:
         return _py_object;
     }
 
+    operator std::string()const{
+        PyObject* objects_representation = PyObject_Str(_py_object);
+
+        if(!objects_representation)
+            return "";
+
+        const char* s = PyUnicode_AsUTF8(objects_representation);
+
+        if(!s)
+            return "";
+
+        return s;
+
+    }
+
     ~PythonSmartPointer(){
         if(_py_object)
             Py_XDECREF(_py_object);
@@ -106,6 +106,14 @@ typedef struct
 
 static PyTypeObject RouletteType = { PyVarObject_HEAD_INIT(NULL, 0) };
 
+static void rlt_roulette_dealloc(PyRoulette *self);
+static PyObject* rlt_roulette_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+static PyObject * rlt_roulette_insert(PyRoulette *self, PyObject *args);
+static int rlt_roulette_init(PyRoulette *self, PyObject *args, PyObject *kwds);
+static PyObject * rlt_roulette_roll(PyRoulette *self, PyObject *Py_UNUSED(ignored));
+static PyObject * rlt_roulette_remove(PyRoulette *self, PyObject *args);
+static PyObject* rlt_roulette_iterator(PyRoulette* self);
+
 //--------------------------- PyRoulette ---------------------------//
 
 //--------------------------- PyRouletteIterator ---------------------------//
@@ -120,6 +128,11 @@ typedef struct
 }PyRouletteIterator;
 
 static PyTypeObject RouletteIteratorType = { PyVarObject_HEAD_INIT(NULL, 0) };
+
+static void rlt_roulette_iterator_dealloc(PyRouletteIterator *self);
+static PyObject* rlt_roulette_iterator_new(PyTypeObject *type, PyObject *args, PyObject *kwds);
+static int rlt_roulette_iterator_init(PyRouletteIterator *self, PyObject *args, PyObject *kwds);
+static PyObject* rlt_roulette_iterator_next (PyRouletteIterator * self);
 
 //--------------------------- PyRouletteIterator ---------------------------//
 
@@ -161,8 +174,8 @@ static PyObject * rlt_roulette_insert(PyRoulette *self, PyObject *args)
 }
 
 static int rlt_roulette_init(PyRoulette *self, PyObject *args, PyObject *kwds){
-
-    static char *kwlist[] = {"chance_list", NULL};
+    static char chance_list_str[] = "chance_list";
+    static char *kwlist[] = {chance_list_str, NULL};
     PyObject* chance_list = NULL, *iterator = NULL, *item = NULL;
 
 
@@ -231,11 +244,39 @@ static PyObject * rlt_roulette_remove(PyRoulette *self, PyObject *args)
     Py_RETURN_FALSE;
 }
 
-PyObject* rlt_roulette_iterator(PyRoulette* self){
+static PyObject* rlt_roulette_iterator(PyRoulette* self){
 
-    
+    PyObject *args = NULL, *kwds = NULL, *iter = NULL;
+    bool complete = false;
 
-    return NULL;
+    do{
+        if( !(args = Py_BuildValue("(O)", self)))
+            break;
+
+        if( !(kwds = Py_BuildValue("{}")))
+            break;
+
+        if(!(iter = rlt_roulette_iterator_new(&RouletteIteratorType, NULL, NULL)))
+            break;
+
+        if(rlt_roulette_iterator_init((PyRouletteIterator*)iter, args, kwds) < 0)
+            break;
+
+        complete = true;
+    }while(0);
+
+    if(!complete){
+        if(args)
+            Py_DECREF(args);
+
+        if(kwds)
+            Py_DECREF(kwds);
+
+        if(iter)
+            Py_DECREF(iter);
+    }
+
+    return iter;
 }
 
 static PyMethodDef rlt_roulette_methods[] = {
@@ -287,10 +328,9 @@ static PyObject* rlt_roulette_iterator_new(PyTypeObject *type, PyObject *args, P
 }
 
 static int rlt_roulette_iterator_init(PyRouletteIterator *self, PyObject *args, PyObject *kwds){
-
-    static char *kwlist[] = {NULL};
+    static char roulette_str[] = "roulette";
+    static char *kwlist[] = {roulette_str, NULL};
     PyObject* py_roulette = NULL;
-
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "O|", kwlist, &py_roulette))
         return -1;
@@ -305,6 +345,25 @@ static int rlt_roulette_iterator_init(PyRouletteIterator *self, PyObject *args, 
 
     return 0;
 }   
+
+static PyObject* rlt_roulette_iterator_next (PyRouletteIterator * self){
+
+    PyObject* ret_val = NULL;
+
+    if(*(self->begin_iterator) == *(self->end_iterator)){
+        PyErr_Format(PyExc_StopIteration, "");
+        return NULL;
+    }
+
+    if(!(ret_val = Py_BuildValue("(Od)",(PyObject*)(*(self->begin_iterator))->get_value(), (*(self->begin_iterator))->get_max() - (*(self->begin_iterator))->get_min())))
+        return NULL;
+
+    ++(*(self->begin_iterator));
+    Py_INCREF((PyObject*)(*(self->begin_iterator))->get_value());
+
+    return ret_val;
+
+}
 
 static PyMethodDef rlt_roulette_iterator_methods[] = {
     {NULL, NULL, 0, NULL}  /* Sentinel */
@@ -321,10 +380,11 @@ PyTypeObject* rlt_init_roulette_iterator_type(bool init){
         RouletteIteratorType.tp_new = rlt_roulette_iterator_new;
         RouletteIteratorType.tp_init = (initproc)rlt_roulette_iterator_init;
         RouletteIteratorType.tp_dealloc = (destructor) rlt_roulette_iterator_dealloc;
-        RouletteIteratorType.tp_methods = rlt_roulette_methods;
+        RouletteIteratorType.tp_methods = rlt_roulette_iterator_methods;
+        RouletteIteratorType.tp_iternext = (iternextfunc)rlt_roulette_iterator_next;
     }
 
-    return &RouletteType;
+    return &RouletteIteratorType;
 }
 
 /********************************************************** roulette iterator **********************************************************/
@@ -371,11 +431,16 @@ PyMODINIT_FUNC PyInit_roulette(void)
 {
     PyObject *module = NULL;
     PyTypeObject* roullete_type = NULL;
+    PyTypeObject* roulette_iterator_type = NULL;
 
     bool complete = false;
     do{
         //ready new type
         if (PyType_Ready(rlt_init_roulette_type(true)) < 0)
+            break;
+
+        //ready new type
+        if (PyType_Ready(rlt_init_roulette_iterator_type(true)) < 0)
             break;
 
         //ready module
@@ -387,6 +452,12 @@ PyMODINIT_FUNC PyInit_roulette(void)
 
         if (PyModule_AddObject(module, "roulette", (PyObject *) roullete_type) < 0)
             break;
+
+        roulette_iterator_type = rlt_init_roulette_iterator_type(false);
+        Py_INCREF(roulette_iterator_type);
+
+        if (PyModule_AddObject(module, "rlt_iter", (PyObject *) roulette_iterator_type) < 0)
+            break;
         
         complete = true;
 
@@ -396,6 +467,11 @@ PyMODINIT_FUNC PyInit_roulette(void)
         if(roullete_type){
             Py_DECREF(roullete_type);
             roullete_type = NULL;
+        }
+
+        if(roulette_iterator_type){
+            Py_DECREF(roulette_iterator_type);
+            roulette_iterator_type = NULL;
         }
 
         if(module){

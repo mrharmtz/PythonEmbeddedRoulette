@@ -1,5 +1,7 @@
 import roulette
 
+print(dir(roulette))
+
 for i in range(100):
     print(f'#{i}:{roulette.random_range(0, 100)}')
 
@@ -22,5 +24,10 @@ for i in range(10000):
 for key,value in counter.items():
     print(f'{key}:{value}')
 
-for value in randomizer:
-    print(value)
+iter = iter(randomizer)
+
+print(f'iter type = {type(iter)}')
+
+for val, chance in randomizer:
+    print(f'{val} has a chance of {chance}')
+
