@@ -3,12 +3,9 @@ import roulette
 for i in range(100):
     print(f'#{i}:{roulette.random_range(0, 100)}')
 
-randomizer = roulette.roulette()
+randomizer = roulette.roulette([('boy', 5),('hell', 2),('fuckton', 2),('tick', 1), ('smelly', 1)])
 
-for i in range(10):
-    randomizer.insert(f'{i}', i+1)
-
-randomizer.remove('5')
+randomizer.remove('tick')
 
 counter = {}
 

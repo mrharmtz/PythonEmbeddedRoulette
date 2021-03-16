@@ -118,10 +118,6 @@ static PyObject* rlt_roulette_new(PyTypeObject *type, PyObject *args, PyObject *
     return (PyObject *)self;
 }
 
-/*static int rlt_roulette_init(PyRoulette *self, PyObject *args, PyObject *kwds){
-
-}*/
-
 static PyObject * rlt_roulette_insert(PyRoulette *self, PyObject *args)
 {
     PyObject* object;
@@ -136,6 +132,48 @@ static PyObject * rlt_roulette_insert(PyRoulette *self, PyObject *args)
 
     Py_RETURN_NONE;
 }
+
+static int rlt_roulette_init(PyRoulette *self, PyObject *args, PyObject *kwds){
+
+    static char *kwlist[] = {"chance_list", NULL};
+    PyObject* chance_list = NULL, *iterator = NULL, *item = NULL;
+
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O", kwlist, &chance_list))
+        return -1;
+
+    if(chance_list){
+
+        if(!(iterator = PyObject_GetIter(chance_list))){
+            return -1;
+        }
+
+        while ((item = PyIter_Next(iterator)))
+        {
+            if(!PyTuple_Check(item)){
+                Py_DECREF(item);    
+                Py_DECREF(iterator);
+                PyErr_Format(PyExc_TypeError, "item not a tuple of an object and float");
+                return -1;
+            }
+
+            if(!rlt_roulette_insert(self, item)) {
+                Py_DECREF(item);    
+                Py_DECREF(iterator);
+                return -1;
+            }
+
+            Py_DECREF(item);
+        }
+
+        Py_DECREF(iterator);
+    }
+
+    if (PyErr_Occurred())
+        return -1;
+            
+    return 0;
+}   
 
 static PyObject * rlt_roulette_roll(PyRoulette *self, PyObject *Py_UNUSED(ignored))
 {   
@@ -158,16 +196,10 @@ static PyObject * rlt_roulette_remove(PyRoulette *self, PyObject *args)
         return NULL;
     }
 
-    RLT_FORMAT_LINE("%s", __func__);
-
     PythonSmartPointer ptr(object);
-
-    RLT_FORMAT_LINE("%s", __func__);
     
     if(self->roulette_handler->remove(ptr))
         Py_RETURN_TRUE;
-
-    RLT_FORMAT_LINE("%s", __func__);
 
     Py_RETURN_FALSE;
 }
@@ -189,6 +221,7 @@ PyTypeObject* rlt_init_roulette_type(bool init){
         RouletteType.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE;
         RouletteType.tp_doc = "roulette object";
         RouletteType.tp_new = rlt_roulette_new;
+        RouletteType.tp_init = (initproc)rlt_roulette_init;
         RouletteType.tp_dealloc = (destructor) rlt_roulette_dealloc,
         RouletteType.tp_methods = rlt_roulette_methods;
     }
