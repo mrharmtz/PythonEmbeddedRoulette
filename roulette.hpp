@@ -234,10 +234,9 @@ public:
     }
 
     virtual bool remove(T const & value){
-
         auto iter = _range_list.begin();
 
-        while (iter->get_value() != value && iter++ != _range_list.end());
+        for (; iter != _range_list.end() && iter->get_value() != value; ++iter);
 
         if (iter == _range_list.end())
             return false;

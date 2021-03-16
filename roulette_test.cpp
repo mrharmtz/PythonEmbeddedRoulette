@@ -39,6 +39,7 @@ std::map<test_val_t, size_t> run_roulette(Roulette<test_val_t, NewRand> roulette
 int main(int argc, char* argv[]){
 
     const char* removable = "little bitch";
+    const char* non_existant = "n/a";
 
     Roulette<test_val_t, NewRand> roulette({{"suck this dick", 5}, {"sir farts a lot", 2}, {"smell you later", 2}, {removable, 1}});
     
@@ -53,9 +54,9 @@ int main(int argc, char* argv[]){
     for (auto iter = roulette.begin() ; iter != roulette.end() ; ++iter)
         cout << "value \"" << iter->get_value() << "\" is between " << iter->get_min() << " and " << iter->get_max() << endl;
 
-    cout << endl << "removing value \"" << removable << "\"" << endl << endl;
+    cout << endl << "removing value \"" << non_existant << "\" " << ((roulette.remove(non_existant))? "succeded" : "failed" ) << endl << endl;
 
-    roulette.remove(removable);
+    cout << endl << "removing value \"" << removable << "\" " << ((roulette.remove(removable))? "succeded" : "failed" ) << endl << endl;
 
     for (auto iter = roulette.begin() ; iter != roulette.end() ; ++iter)
         cout << "value \"" << iter->get_value() << "\" is between " << iter->get_min() << " and " << iter->get_max() << endl;
