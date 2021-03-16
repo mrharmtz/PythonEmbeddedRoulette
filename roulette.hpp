@@ -13,6 +13,8 @@
 #include <random>
 #include <chrono>
 
+#include <Python.h>
+
 
 class SimpleRand{
     private:
@@ -26,6 +28,8 @@ class SimpleRand{
         }
 
         double operator()(double min,double max)const{
+            
+            PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
 
             if(min >= max)
                 throw std::invalid_argument("min cannot be greater or equal to max");
@@ -50,6 +54,8 @@ class NewRand{
         { }
 
         double operator()(double min,double max)const {
+            
+            PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
 
             if(min >= max)
                 throw std::invalid_argument("min cannot be greater or equal to max");
@@ -139,7 +145,7 @@ public:
     }
 };
 
-template <typename T, typename ROLLER = SimpleRand>
+template <typename T, typename ROLLER = NewRand>
 class Roulette{
 private:
     ROLLER _rand_gen;
@@ -148,7 +154,12 @@ private:
 
 protected:
     virtual size_t _find_index(double roll)const {
+
+        PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
+
         size_t start = 0, fin = _range_list.size()-1,mid;
+
+        PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
 
         while(start <= fin){
             mid = (start+fin)/2;
@@ -167,9 +178,11 @@ protected:
                 return mid;
             }
 
+            PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
             throw std::logic_error("reached the end of the loop, not possible");
         }
 
+        PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
         throw std::logic_error("reached the end of the loop, and not found a value");
     }
 
@@ -246,7 +259,18 @@ public:
     }
 
     virtual T& roll(){
-        return _range_list[_find_index(_rand_gen(0,_last_val))].get_value();
+        
+        PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
+
+        double rnd_val = _rand_gen(0,_last_val);
+
+        PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
+
+        size_t index = _find_index(rnd_val);
+
+        PySys_WriteStdout("%05d:%s\n", __LINE__, __func__);
+
+        return _range_list[index].get_value();
     }
 
     virtual bool isEmpty()const{
