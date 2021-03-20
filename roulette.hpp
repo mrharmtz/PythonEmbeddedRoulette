@@ -111,9 +111,13 @@ public:
 
     virtual ~RangedValue() { }
 
-    void update_offset(const double& new_offset){
+    void update_offset(double new_offset){
         _max = new_offset + (_max - _min);
         _min = new_offset;
+    }
+
+    void update_range(double new_range ){
+        _max = _min + new_range;
     }
 
     bool operator<(const double& val)const {
@@ -252,6 +256,27 @@ public:
         _last_val = new_offset;
 
         _range_list.erase(to_remove_iter);
+
+        return true;
+    }
+
+    virtual bool update(T const& value, double new_value){
+        auto iter = _range_list.begin();
+
+        for (; iter != _range_list.end() && iter->get_value() != value; ++iter);
+
+        if (iter == _range_list.end())
+            return false;
+
+        iter->update_range(new_value);
+        double new_offset = iter->get_max();
+
+        for(++iter; iter != _range_list.end() ; ++iter){
+            iter->update_offset(new_offset);
+            new_offset = iter->get_max();
+        }
+
+        _last_val = new_offset;
 
         return true;
     }

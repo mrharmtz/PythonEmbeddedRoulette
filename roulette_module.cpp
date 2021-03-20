@@ -250,6 +250,23 @@ static PyObject * rlt_roulette_remove(PyRoulette *self, PyObject *args)
     Py_RETURN_FALSE;
 }
 
+static PyObject* rlt_roulette_update(PyRoulette *self, PyObject *args){
+
+    PyObject* object;
+    double new_chance;
+
+    if(!PyArg_ParseTuple(args, "Od", &object, &new_chance)) {
+        return NULL;
+    }
+
+    PythonSmartPointer ptr(object);
+
+    if(self->roulette_handler->update(ptr, new_chance))
+        Py_RETURN_TRUE;
+
+    Py_RETURN_FALSE;
+}
+
 static PyObject* rlt_roulette_iterator(PyRoulette* self){
 
     PyObject *args = NULL, *kwds = NULL, *iter = NULL;
@@ -289,6 +306,7 @@ static PyMethodDef rlt_roulette_methods[] = {
     {"insert", (PyCFunction) rlt_roulette_insert, METH_VARARGS, "inserts a python element into the roulette"},
     {"roll", (PyCFunction) rlt_roulette_roll, METH_NOARGS, "randomly choses an element and returns it"},
     {"remove", (PyCFunction) rlt_roulette_remove, METH_VARARGS, "removes a python element from roulette"},
+    {"update", (PyCFunction) rlt_roulette_update, METH_VARARGS, "updates element chance in roulette"},
     {NULL, NULL, 0, NULL}  /* Sentinel */
 };
 

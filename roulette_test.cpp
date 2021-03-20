@@ -40,11 +40,12 @@ int main(int argc, char* argv[]){
 
     const char* removable = "little bitch";
     const char* non_existant = "n/a";
+    const char* updatable = "suck this dick";
 
     Roulette<test_val_t, NewRand>::iterator default_iter;
     Roulette<test_val_t, NewRand>::iterator another_default_iter;
 
-    Roulette<test_val_t, NewRand> roulette({{"suck this dick", 5}, {"sir farts a lot", 2}, {"smell you later", 2}, {removable, 1}});
+    Roulette<test_val_t, NewRand> roulette({{updatable, 3.5}, {"sir farts a lot", 1.5}, {"smell you later", 4.25}, {removable, 0.75}});
 
     if(default_iter == ++roulette.end()){
         cout << "default is end" << endl;
@@ -72,6 +73,10 @@ int main(int argc, char* argv[]){
     cout << endl << "removing value \"" << non_existant << "\" " << ((roulette.remove(non_existant))? "succeded" : "failed" ) << endl << endl;
 
     cout << endl << "removing value \"" << removable << "\" " << ((roulette.remove(removable))? "succeded" : "failed" ) << endl << endl;
+
+    cout << endl << "updating value \"" << non_existant << "\" " << ((roulette.update(non_existant, 5))? "succeded" : "failed" ) << endl << endl;
+    
+    cout << endl << "updating value \"" << updatable << "\" " << ((roulette.update(updatable, 5))? "succeded" : "failed" ) << endl << endl;
 
     for (auto iter = roulette.begin() ; iter != roulette.end() ; ++iter)
         cout << "value \"" << iter->get_value() << "\" is between " << iter->get_min() << " and " << iter->get_max() << endl;
