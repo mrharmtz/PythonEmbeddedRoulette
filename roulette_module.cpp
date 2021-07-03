@@ -24,6 +24,7 @@
 class PythonSmartPointer{
 private:
     mutable PyObject* _py_object;
+    mutable std::string _obj_string;
 public:
 
     PythonSmartPointer()
@@ -45,6 +46,15 @@ public:
         if(_py_object)
             Py_XDECREF(_py_object);
         _py_object = rhs._py_object;
+        Py_INCREF(_py_object);
+        return *this;
+    }
+
+    PythonSmartPointer& operator=(PyObject* rhs){
+
+        if(_py_object)
+            Py_XDECREF(_py_object);
+        _py_object = rhs;
         Py_INCREF(_py_object);
         return *this;
     }
@@ -78,9 +88,13 @@ public:
         const char* s = PyUnicode_AsUTF8(objects_representation);
 
         if(!s)
-            return "";
+             _obj_string = "";
+        else
+            _obj_string = s;
 
-        return s;
+        Py_DECREF(objects_representation);
+
+        return _obj_string.c_str();
 
     }
 
@@ -144,7 +158,8 @@ static PyObject* rlt_roulette_iterator_next (PyRouletteIterator * self);
 
 static void rlt_roulette_dealloc(PyRoulette *self)
 {
-    delete self->roulette_handler;
+    self->roulette_handler->~Roulette();
+    PyMem_RawFree(self->roulette_handler);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
@@ -152,10 +167,18 @@ static void rlt_roulette_dealloc(PyRoulette *self)
 static PyObject* rlt_roulette_new(PyTypeObject *type, PyObject *args, PyObject *kwds){
 
     PyRoulette *self;
-    if(!(self = (PyRoulette *) type->tp_alloc(type, 0)))
+
+    void* temp_ptr = PyMem_RawMalloc(sizeof(Roulette<PythonSmartPointer>));
+
+    if(!temp_ptr)
         return NULL;
+
+    if(!(self = (PyRoulette *) type->tp_alloc(type, 0))){
+        PyMem_RawFree(temp_ptr);
+        return NULL;
+    }
     
-    self->roulette_handler = new Roulette<PythonSmartPointer>();
+    self->roulette_handler = new(temp_ptr) Roulette<PythonSmartPointer>();
 
     return (PyObject *)self;
 }
@@ -178,7 +201,7 @@ static PyObject * rlt_roulette_insert(PyRoulette *self, PyObject *args)
 static int rlt_roulette_init(PyRoulette *self, PyObject *args, PyObject *kwds){
     static char chance_list_str[] = "chance_list";
     static char *kwlist[] = {chance_list_str, NULL};
-    PyObject* chance_list = NULL, *iterator = NULL, *item = NULL;
+    PyObject* chance_list = NULL, *iterator = NULL, *item = NULL, *none_obj = NULL;
 
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "|O", kwlist, &chance_list))
@@ -199,12 +222,13 @@ static int rlt_roulette_init(PyRoulette *self, PyObject *args, PyObject *kwds){
                 return -1;
             }
 
-            if(!rlt_roulette_insert(self, item)) {
+            if(!(none_obj = rlt_roulette_insert(self, item))) {
                 Py_DECREF(item);    
                 Py_DECREF(iterator);
                 return -1;
             }
 
+            Py_DECREF(none_obj);
             Py_DECREF(item);
         }
 
@@ -289,8 +313,10 @@ static PyObject* rlt_roulette_iterator(PyRoulette* self){
     }while(0);
 
     if(!complete){
-        if(args)
+        if(args){
             Py_DECREF(args);
+            Py_DECREF(self);//because Py_BuildValue succeded, self ref count was increased
+        }
 
         if(kwds)
             Py_DECREF(kwds);
@@ -337,19 +363,46 @@ PyTypeObject* rlt_init_roulette_type(bool init){
 
 static void rlt_roulette_iterator_dealloc(PyRouletteIterator *self){
 
-    delete self->begin_iterator;
-    delete self->end_iterator;
+    self->begin_iterator->Roulette<PythonSmartPointer>::iterator::~iterator();
+    PyMem_RawFree(self->begin_iterator);
+    self->end_iterator->Roulette<PythonSmartPointer>::iterator::~iterator();
+    PyMem_RawFree(self->end_iterator);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
 static PyObject* rlt_roulette_iterator_new(PyTypeObject *type, PyObject *args, PyObject *kwds){
 
-    PyRouletteIterator *self;
-    if(!(self = (PyRouletteIterator *) type->tp_alloc(type, 0)))
+    PyRouletteIterator *self = NULL;
+    void* temp_begin = NULL, *temp_end = NULL;
+    bool complete = false;
+    do{
+        
+        if(!(temp_begin = PyMem_RawMalloc(sizeof(Roulette<PythonSmartPointer>::iterator))))
+            break;
+
+        if(!(temp_end = PyMem_RawMalloc(sizeof(Roulette<PythonSmartPointer>::iterator))))
+            break;
+
+        if(!(self = (PyRouletteIterator *) type->tp_alloc(type, 0)))
+            break;
+        
+        complete = true;
+        
+    }while (0);
+
+    if (!complete)
+    {
+        if(temp_begin)PyMem_RawFree(temp_begin);
+
+        if(temp_end)PyMem_RawFree(temp_end);
+
+        if(self)Py_TYPE(self)->tp_free((PyObject *) self);
+
         return NULL;
+    }
     
-    self->begin_iterator = new Roulette<PythonSmartPointer>::iterator;
-    self->end_iterator = new Roulette<PythonSmartPointer>::iterator;
+    self->begin_iterator = new(temp_begin) Roulette<PythonSmartPointer>::iterator();
+    self->end_iterator = new(temp_end) Roulette<PythonSmartPointer>::iterator();
 
     return (PyObject *)self;
 }
@@ -386,7 +439,7 @@ static PyObject* rlt_roulette_iterator_next (PyRouletteIterator * self){
         return NULL;
 
     ++(*(self->begin_iterator));
-    Py_INCREF((PyObject*)(*(self->begin_iterator))->get_value());
+    //Py_INCREF((PyObject*)(*(self->begin_iterator))->get_value());
 
     return ret_val;
 
