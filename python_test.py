@@ -1,6 +1,7 @@
 import roulette
 import os
 import psutil
+import gc
 process = psutil.Process(os.getpid())
 print(f'pid = {os.getpid()}')
 start_rec = str(process.memory_info()) 
@@ -31,7 +32,6 @@ print(f'---after removing {to_remove}, before updating chance of {to_update}---'
 for val, chance in randomizer:
     print(f'{val} has a chance of {chance}')
 
-# randomizer.update(to_update, 4.5)
 randomizer[to_update] = 4.5
 
 print(f'---after updating chance of {to_update}---')
@@ -66,9 +66,17 @@ for val, chance in randomizer:
 
 mid_rec = str(process.memory_info())
 
-for i in range(1000):
-    temp = roulette.roulette(initial_list)
-    del temp
+roulette_list = [roulette.roulette(initial_list) for i in range(1_000_000)]
+
+print(f'initial_list elements ref count = {[(list_obj[0], len(gc.get_referrers(list_obj[0]))) for list_obj in initial_list]}')
+input('press enter to continue\n')
+
+del randomizer
+print(f'initial_list elements ref count = {[(list_obj[0], len(gc.get_referrers(list_obj[0]))) for list_obj in initial_list]}')
+del roulette_list
+
+print(f'initial_list elements ref count = {[(list_obj[0], len(gc.get_referrers(list_obj[0]))) for list_obj in initial_list]}')
+input('press enter to close\n')
 
 print(f'before any allocation memory usage: {start_rec}')  # in bytes 
 print(f'before allocation test memory usage: {mid_rec}')  # in bytes

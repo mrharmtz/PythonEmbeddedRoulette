@@ -199,8 +199,7 @@ static PyObject * rlt_roulette_insert(PyRoulette *self, PyObject *args)
         return NULL;
     }
 
-    PythonSmartPointer ptr(object);
-    self->roulette_handler->insert(ptr, chance);
+    self->roulette_handler->insert(object, chance);
 
     Py_RETURN_NONE;
 }
