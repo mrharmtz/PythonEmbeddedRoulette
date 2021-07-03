@@ -38,7 +38,7 @@ class SimpleRand{
         SimpleRand(){
             if(!_is_init){
                 _is_init = true;
-                srand(time(NULL));
+                srand((unsigned int)time(NULL));
             }
         }
 
@@ -62,7 +62,7 @@ class NewRand{
     public:
 
         NewRand()
-        :_rando_seeder(std::chrono::system_clock::now().time_since_epoch().count())
+        :_rando_seeder((unsigned int)std::chrono::system_clock::now().time_since_epoch().count())
         ,_distribution(0.0,1.0)
         { }
 
@@ -151,6 +151,10 @@ public:
         return _max;
     }
 
+    virtual double get_range()const{
+        return _max - _min;
+    }
+
     virtual T& get_value(){
         return _val;
     }
@@ -237,10 +241,17 @@ public:
         _range_list.push_back(RangedValue<T>(shadow, (_last_val+=chance), val));
     }
 
-    virtual bool remove(T const & value){
-        auto iter = _range_list.begin();
+    virtual iterator find(T const & value){
+        
+        for (auto iter = _range_list.begin() ; iter != _range_list.end(); ++iter)
+            if(iter->get_value() == value)
+                return iter;
 
-        for (; iter != _range_list.end() && iter->get_value() != value; ++iter);
+        return _range_list.end();
+    }
+
+    virtual bool remove(T const & value){
+        auto iter = find(value);
 
         if (iter == _range_list.end())
             return false;
@@ -261,9 +272,7 @@ public:
     }
 
     virtual bool update(T const& value, double new_value){
-        auto iter = _range_list.begin();
-
-        for (; iter != _range_list.end() && iter->get_value() != value; ++iter);
+        auto iter = find(value);
 
         if (iter == _range_list.end())
             return false;
